@@ -1,0 +1,181 @@
+services:
+  # DNS Server using BIND
+  bind:
+    image: internetsystemsconsortium/bind9:9.20
+    container_name: bind_server
+    ports:
+      - "1053:53/udp"
+      - "1053:53/tcp"
+    environment:
+      - BIND9_LOG_LEVEL=info
+    volumes:
+      - ./docker/nginx/bind/named.conf:/etc/bind/named.conf
+      - ./docker/nginx/bind/db.cdn.test:/etc/bind/db.cdn.test
+      - ./docker/nginx/bind/db.localhost:/etc/bind/db.localhost
+    depends_on:
+      - node1
+      - node2
+      - node3
+      - node4
+      - lb_round_robin
+      - lb_least_connections
+      - lb_ip_hash
+      - lb_weighted_round_robin
+      - lb_consistent_hashing
+      - lb_failover
+    entrypoint: [ "/usr/sbin/named", "-f", "-c", "/etc/bind/named.conf" ]
+    networks:
+      hsa_cdn_net:
+        ipv4_address: 172.16.50.8
+  
+  lb_round_robin:
+    image: nginx:latest
+    container_name: lb_round_robin
+    volumes:
+      - ./docker/nginx/lb_round_robin/nginx.conf:/etc/nginx/nginx.conf
+    ports:
+      - "8080:80"
+    depends_on:
+      - node1
+      - node2
+      - node3
+      - node4
+    dns:
+      - 172.16.50.8
+    networks:
+      hsa_cdn_net:
+        ipv4_address: 172.16.50.9
+  
+  lb_least_connections:
+    image: nginx:latest
+    container_name: lb_least_connections
+    volumes:
+      - ./docker/nginx/lb_least_connections/nginx.conf:/etc/nginx/nginx.conf
+    ports:
+      - "8081:80"
+    depends_on:
+      - node1
+      - node2
+      - node3
+      - node4
+    dns:
+      - 172.16.50.8
+    networks:
+      hsa_cdn_net:
+        ipv4_address: 172.16.50.10
+  
+  lb_ip_hash:
+    image: nginx:latest
+    container_name: lb_ip_hash
+    volumes:
+      - ./docker/nginx/lb_ip_hash/nginx.conf:/etc/nginx/nginx.conf
+    ports:
+      - "8082:80"
+    depends_on:
+      - node1
+      - node2
+      - node3
+      - node4
+    dns:
+      - 172.16.50.8
+    networks:
+      hsa_cdn_net:
+        ipv4_address: 172.16.50.11
+  
+  lb_weighted_round_robin:
+    image: nginx:latest
+    container_name: lb_weighted_round_robin
+    volumes:
+      - ./docker/nginx/lb_weighted_round_robin/nginx.conf:/etc/nginx/nginx.conf
+    ports:
+      - "8083:80"
+    depends_on:
+      - node1
+      - node2
+      - node3
+      - node4
+    dns:
+      - 172.16.50.8
+    networks:
+      hsa_cdn_net:
+        ipv4_address: 172.16.50.12
+  
+  lb_consistent_hashing:
+    image: nginx:latest
+    container_name: lb_consistent_hashing
+    volumes:
+      - ./docker/nginx/lb_consistent_hashing/nginx.conf:/etc/nginx/nginx.conf
+    ports:
+      - "8084:80"
+    depends_on:
+      - node1
+      - node2
+      - node3
+      - node4
+    dns:
+      - 172.16.50.8
+    networks:
+      hsa_cdn_net:
+        ipv4_address: 172.16.50.13
+  
+  lb_failover:
+    image: nginx:latest
+    container_name: lb_failover
+    volumes:
+      - ./docker/nginx/lb_failover/nginx.conf:/etc/nginx/nginx.conf
+    ports:
+      - "8085:80"
+    depends_on:
+      - node1
+      - node2
+      - node3
+      - node4
+    dns:
+      - 172.16.50.8
+    networks:
+      hsa_cdn_net:
+        ipv4_address: 172.16.50.14
+  
+  node1:
+    image: httpd:latest
+    container_name: node1
+    volumes:
+      - ./images:/usr/local/apache2/htdocs
+    networks:
+      hsa_cdn_net:
+        ipv4_address: 172.16.50.15
+  
+  node2:
+    image: httpd:latest
+    container_name: node2
+    volumes:
+      - ./images:/usr/local/apache2/htdocs
+    networks:
+      hsa_cdn_net:
+        ipv4_address: 172.16.50.16
+  
+  node3:
+    image: httpd:latest
+    container_name: node3
+    volumes:
+      - ./images:/usr/local/apache2/htdocs
+    networks:
+      hsa_cdn_net:
+        ipv4_address: 172.16.50.17
+  
+  node4:
+    image: httpd:latest
+    container_name: node4
+    volumes:
+      - ./images:/usr/local/apache2/htdocs
+    networks:
+      hsa_cdn_net:
+        ipv4_address: 172.16.50.18
+
+networks:
+  hsa_cdn_net:
+    name: hsa_cdn_net
+    ipam:
+      driver: default
+      config:
+      - subnet: 172.16.50.0/24
